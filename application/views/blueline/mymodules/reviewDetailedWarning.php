@@ -100,7 +100,7 @@
 									<td>OPEN ORDER</td>
                                     <?php
                                     $openOrderArr = [];
-                                    $swsPartNum = $rlmData[0]['part_number'];
+                                    $swsPartNum = $rlmData[0]['sws_part_num'];
                                     $oracleId = $transitData[0]['customer_num'];
                                     $shipToLoc = $transitData[0]['ship_to_location'];
                                     if($in_transit_num){
@@ -110,50 +110,46 @@
                                     }
                                     $import_date = date('Ymd',strtotime('Last Monday'));
                                     if(date('D') == "Mon") $import_date = date('Ymd');
-                                    $query_str="SELECT SUM(`open_qty`) AS open_qty , schd_ship_date FROM `open_orders` WHERE `customer_num`='$oracleId' AND `ship_to_location`='$shipToLoc' AND `item`='$swsPartNum' AND `import_date`='$import_date' GROUP BY `schd_ship_date`";
+                                    $query_str="SELECT SUM(`open_qty`) AS open_qty FROM `open_orders` WHERE `customer_num`='$oracleId' AND `ship_to_location`='$shipToLoc' AND `item`='$swsPartNum' AND `import_date`='$import_date' GROUP BY `schd_ship_date`";
                                     $query=$this->db->query($query_str);
                                     $infoData = $query->result_array();
-                                    for($i=0;$i<count($infoData);$i++){
-                                        if($import_date == $infoData[$i]['schd_ship_date']){
-                                            $openOrderArr[$import_date] = $infoData[$i]['open_qty'];
-                                        }else{
-                                            $openOrderArr['back_orders'] += $infoData[$i]['open_qty'];
-                                        }
-                                    }
+                                    $swsInTransitPrior = $infoData[0]['open_qty']+$cum_rec_qty+$in_transit_num;
+                                    foreach($infoData as $key=>$val){
                                     ?>
-									<td><?php echo $openOrderArr['back_orders'] ?></td>
-                                    <?php foreach($periods as $row => $col){
-                                        if($import_date == $row){
+                                    <td><?php echo $val['open_qty']?></td>
+                                    <?php } ?>
+                                    </tr>
+                                    <tr>
+                                    <td>SWS-USA CUM Estimate</td>
+									<td>
+                                       <?php echo $swsInTransitPrior ?>  
+                                    </td>
+
+                                    <?php 
+                                    $swsInTransitNew = $swsInTransitPrior;
+                                    for($i=1;$i<count($infoData);$i++){
+                                        $swsInTransitNew = $swsInTransitNew+$infoData[$i]['open_qty'];
+                                        $swsInTransitNewArr[$i] = $swsInTransitNew;
                                     ?>
-                                    <td><?php echo $openOrderArr[$import_date] ?></td>
-                                    <?php } else { ?>
-                                        <td></td>
-                                    <?php } }
-                                    $swsCum[$import_date] = $openOrderArr[$import_date]+$openOrderArr['back_orders']+$cum_rec_qty+$in_transit_num;
-                                    ?>
+                                    <td><?=$swsInTransitNew?></td>
+                                    <?php } ?>
 									</tr>
-									<tr>
-									<td>SWS-USA CUM Estimate</td>
-									<td></td>
-                                    <?php foreach($periods as $row => $col){
-                                        if($import_date == $row){
+
+                                    <tr>
+                                    <td>Delta</td>
+                                    <td></td>
+                                    <?php 
+                                    $swsIndex = 1;
+                                    foreach($periods as $row => $col){
+                                        if(!$swsInTransitNewArr[$swsIndex])
+                                        continue;
+                                        $delta = $swsInTransitNewArr[$swsIndex] - $col;
+                                        $swsIndex++;
                                     ?>
-                                    <td><?php echo $swsCum[$import_date] ?></td>
-                                    <?php } else { ?>
-                                        <td></td>
-                                    <?php } } ?>
-									</tr>
-									 <tr>
-									<td>DELTA</td>
-									<td></td>
-                                    <?php foreach($periods as $row => $col){
-                                        if($import_date == $row){
-                                    ?>
-                                    <td><?php echo $swsCum[$import_date] - $col ?></td>
-                                    <?php } else { ?>
-                                        <td><?php echo 0 - $col ?></td>
-                                    <?php } } ?>
-									</tr>
+                                        <td><?php echo $delta; ?></td>
+                                    <?php } ?>
+                                    </tr>
+									
                                 </tbody>
                             </table>
                         </div>

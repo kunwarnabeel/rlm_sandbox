@@ -60,9 +60,9 @@
                         <select class="learReleaseDate">
                             <option disabled selected>Select Release Date</option>
                             <?php
-                            $i=-1;$j=-6;
+                            $i=-1;$j=-7;
                             if(date('D')=="Mon"){
-                                $i=0;$j=-5;
+                                $i=0;$j=-6;
                             }
                             for($i;$i>$j;$i--){
                             ?>
@@ -114,9 +114,9 @@
                         <select class="warningReleaseDate">
                             <option disabled selected>Select Release Date</option>
                             <?php
-                            $i=-1;$j=-5;
+                            $i=-1;$j=-6;
                             if(date('D')=="Mon"){
-                                $i=0;$j=-4;
+                                $i=0;$j=-5;
                             }
                             for($i;$i>$j;$i--){
                             ?>

@@ -424,6 +424,9 @@ class Rlm_model extends CI_Model  {
 
                         array_push($bulkinsertPeriod_arr,$trasaction_level_period_data);
                     }
+					//  echo "<pre>";
+					// print_r($bulkinsertPeriod_arr);
+					// exit();
 
                     $transaction_level_data = array
                     (
