@@ -97,12 +97,30 @@ class Warning_model extends CI_Model  {
         return false;
     }
 
+    public function update_warninglog_by_rlmKey($warning_arr,$rlmKey){
+        $this->db->where('rlm_key', $rlmKey);
+        $this->db->update('warning_log', $warning_arr);
+        if ($this->db->affected_rows() > 0) {
+            return true;
+        }
+        return false;
+    }
+
     public function create_warning($data){
         $this->db->insert('warning_log',$data);
         if ($this->db->affected_rows() > 0) {
             return true;
         }
         return false;
+    }
+    
+    public function getWarningLog($rlm_key){
+        $this->db->select('status,user_note,in_transit_num');
+        $this->db->from('warning_log');
+        $this->db->where('rlm_key',$rlm_key);
+        $query = $this->db->get();
+        $data = $query->result_array();
+        return $data;
     }
     
     public function getRlmWarning($rlm_key){

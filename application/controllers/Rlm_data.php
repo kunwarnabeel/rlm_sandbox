@@ -33,14 +33,15 @@ class Rlm_data extends MY_Controller
             $importdate = date('Ymd',strtotime('Last Monday'));
             if(date('D') == "Mon") $importdate = date('Ymd');
         }
-        $mapping = $this->Mapping_model->get_mapping($customer_num,'file_name,customer_name');
-        $customer_name = $mapping[0]['customer_name'];
-        $file = $mapping[0]['file_name'];
         if($customer_num == 'Y1234'){
             $file = 'Yazaki.csv';
+            $customer_name = 'Yazaki';
             $tabledata = $this->Rlm_model->import_yazaki_data($customer_num,$customer_name,$file,$importdate);
         }
         else{
+            $mapping = $this->Mapping_model->get_mapping($customer_num,'file_name,customer_name');
+        $customer_name = $mapping[0]['customer_name'];
+        $file = $mapping[0]['file_name'];
             $tabledata = $this->Rlm_model->import_data($customer_num,$customer_name,$file,$importdate);
         }
         print_r($tabledata);
@@ -81,21 +82,36 @@ if($previous_key[0] == 'A1234'){
             $forecasted_fourweek_sum = $this->Rlm_model->get_period_by_key($temp,$currentrelease_date,4);   
             $forecasted_eightweek_sum = $this->Rlm_model->get_period_by_key($temp,$currentrelease_date,8); 
           }
-
-          // print_r($forecasted_eightweek_sum);exit;
+        //   if($previous_key[0] == 'Y1234')
+        //   {
+        //     echo $row['rlmkey'].'<br>';
+        //     echo $current_val.'<br>'.$forecasted_val.'<br>=============<br>';
+        //     continue;
+        //   }
+        //   else{
+        //     continue;
+        //   }
+           //print_r($forecasted_eightweek_sum);exit;
           $delta = 0;
           if($forecasted_val !=0 && $current_val!=0)
             $delta = $current_val/$forecasted_val;
         $delta = number_format($delta,2); 
         
+       // exit();
         if($row['customer_num'] == 'L2222' && $current_val == $row['cum_rec_qty']){
             continue;        
         }
-        // weekly warning            
+        
+        // weekly warning   
+        echo $delta.'---'.$weeklythreshold;
+        exit();             
         if($delta>=$weeklythreshold)
         {
+            
             $warning_count++;
+            
             $sws_part_num = $this->Rlm_model->getswspartnum($row['customer_num'],$row['plant_num'],$row['part_num']);
+            
             $data = array(
                 'log_date'=>date('Ymd'),
                 'release_date'=>$row['rel_date'],
@@ -110,13 +126,15 @@ if($previous_key[0] == 'A1234'){
                 'user_note'=>'',
                 'rlm_key'=>$row['rlmkey'],
             );
+           
             $this->Warning_model->create_warning($data);
         }
         // four week warning
         $delta = 0;
         if($forecasted_fourweek_sum !=0 && $current_fourweek_sum!=0)
             $delta = $current_fourweek_sum/$forecasted_fourweek_sum;
-        $delta = number_format($delta,2);            
+        $delta = number_format($delta,2);
+                    
         if($delta>=$fourweektrenthreshold)
         {
             $warning_count++;
@@ -141,7 +159,8 @@ if($previous_key[0] == 'A1234'){
         $delta = 0;
         if($forecasted_eightweek_sum !=0 && $current_eightweek_sum!=0)
             $delta = $current_eightweek_sum/$forecasted_eightweek_sum;
-        $delta = number_format($delta,2);            
+        $delta = number_format($delta,2);
+                    
         if($delta>=$eightweektrendthreshold)
         {
             $warning_count++;
@@ -171,6 +190,7 @@ if($previous_key[0] == 'A1234'){
         
         // if(!empty($forcast_start) && !empty($row['cum_rec_qty']) && $forcast_start !=0 &&$row['cum_rec_qty']!=0){
         $backorder_trend = number_format($forcast_start/$cum_rec_qty,2);
+        //echo $backorder_trend.'---'.$backorderthreshold;
         if($backorder_trend > $backorderthreshold)
         {
             $warning_count++;
@@ -195,6 +215,7 @@ if($previous_key[0] == 'A1234'){
     }//end of foreach
  // echo $warning_count++.' warnings found';
 }// end of if(!empty($current_rlm_keys)){
+    // exit;
     $tabledata="";
     $tabledata.="<h3>Warnings:</h3>";
     if($warning_count){            

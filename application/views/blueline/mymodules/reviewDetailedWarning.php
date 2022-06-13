@@ -53,27 +53,8 @@
                     </div>
                 </div>
                 <div class="row">
-                    <div class="col-md-4">
-                        <div class="table-div responsive padding-top-xs">
-							<div class="marginBottom">
-								<div class="form-group fieldWithError">
-									<label title="Please add the part description">
-										In trnasit Number *
-									</label>
-                                    <?php
-                                    $attributes = ['class' => '', 'id'=>'insert_data'];
-                                    echo form_open($form_action, $attributes);
-                                    ?>
-									<input type="text" name="in_transit_num" id="in_transit_num" value="<?php echo $in_transit_num ?>" class="form-control" placeholder="">
-                                   
-								</div>
-								
-							</div>
-							<button type="submit" class="btn btn-primary itemsubmitbtn">Save</button>
-                            <?php echo form_close(); ?>
-                        </div>
-                    </div>
-                    <div class="col-md-8">
+
+                    <div class="col-md-12">
                         <div class="table-div responsive padding-top-xs">
                             <table id="item_tbl" class="item_tbl table" cellspacing="0" cellpadding="0">
                                 <thead>
@@ -152,6 +133,51 @@
 									
                                 </tbody>
                             </table>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="table-div responsive padding-top-xs">
+							<div class="marginBottom">
+								<div class="form-group fieldWithError">
+									<label title="Please add the part description">
+										In trnasit Number *
+									</label>
+                                    <?php
+                                    $attributes = ['class' => '', 'id'=>'insert_data'];
+                                    echo form_open($form_action, $attributes);
+                                    $disabled="";
+                                    if($status=='close'){
+                                        $disabled='disabled';
+                                    }
+                                    ?>
+									<input <?php echo $disabled ?> type="text" name="in_transit_num" id="in_transit_num" value="<?php echo $in_transit_num ?>" class="form-control" placeholder="">
+                                   
+								</div>
+								
+							</div>
+							<button type="submit" class="btn btn-primary itemsubmitbtn">Save</button>
+                            <?php echo form_close(); ?>
+                        </div>
+                    </div>
+                    <div class="col-md-8">
+                        <div class="table-div responsive padding-top-xs">
+							<div class="marginBottom">
+								<div class="form-group fieldWithError">
+									<label title="Please add the part description">
+										User Notes
+									</label>
+                                    <?php
+                                    $attributes = ['class' => '', 'id'=>'insert_data'];
+                                    echo form_open($form_action, $attributes);
+                                    ?>
+									<textarea <?php echo $disabled ?> style="width: 682px; height: 155px;" id="user_note" name="user_note"><?php echo $user_note ?></textarea>
+                                   
+								</div>
+								
+							</div>
+							<button type="submit" class="btn btn-primary itemsubmitbtn">Save</button>
+                            <?php echo form_close(); ?>
                         </div>
                     </div>
                 </div>    

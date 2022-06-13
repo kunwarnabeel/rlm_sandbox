@@ -73,8 +73,8 @@ class Rlm_model extends CI_Model  {
                     }
                     else{
                         $temp = str_getcsv($line);
-                        $plantNum = $temp[0].'_'.$temp[6];
-                        $partNum =  $temp[10];
+                        $plantNum = $temp[7];
+                        $partNum =  $temp[8];
                         $sectionFlag = true;
                         // print_r($plantNum);exit;
                     }
@@ -99,26 +99,42 @@ class Rlm_model extends CI_Model  {
                 elseif(sizeof($scheduleSectionArr)>0 && !$isSectionHeader && !$isReleaseHeader && count($transaction_level_errors)==0){
                     foreach($scheduleSectionArr as $row => $col){
                         $periodArr = [];
-                        foreach($col as $str){
-                            $period = date('Ymd',strtotime(explode("|",$str)[0]));
-                            $quantity = explode("|",$str)[1];
-                            $cum_value = explode("|",$str)[2];
+                        $j=0;
+                        $current_date = $import_date;
+                        for($i=1;$i<=10;$i++){
+                            $strArr = explode("|",$col[$j]);
+                            $period = date('Ymd',strtotime($strArr[0]));
+                            $cum_value = $strArr[2];
+                            if($period == $current_date){
+                                $periodArr = array(
+                                'rlmkey' => $row,
+                                'period' =>$current_date,
+                                'value' => $cum_value,
+                            );
+                                $j++;
+                            }
+                            elseif(strtotime($period) < strtotime($current_date)){
+                                $j++;
+                            }
+                            else{
+                            $periodArr = array(
+                                'rlmkey' => $row,
+                                'period' =>$current_date,
+                                'value' => 0,
+                            );
+                            }
+                            array_push($bulkSectionPeriodArr,$periodArr);
+                            $current_date = date('Ymd',strtotime($import_date.' '.$i.' Monday'));
                             if($period == $yazakiReleaseDate){
                                 $forecastArr[$row] = $cum_value;
                             }
-                            $periodArr = array(
-                                'rlmkey' => $row,
-                                'period' =>$period,
-                                'value' => $quantity,
-                            );
-                            array_push($bulkSectionPeriodArr,$periodArr);
-                            $this->delete_rlmdata($row,'periods');
                         }
+                        $this->delete_rlmdata($row,'periods');
                     }
                     $scheduleSectionArr= [];
                 }
             }
-            $checkIndex = 1;
+            $plant_part_error_count = 0;
             foreach($lines as $lineNo => $line){
                 if(strpos($line,'SECTION') !== false){ // Read Sections
                     if(strpos($line,'RELEASE HEADER SECTION') !== false){
@@ -136,6 +152,8 @@ class Rlm_model extends CI_Model  {
                 }
                 elseif($isReleaseHeader){ // read inside section data
                     $temp = str_getcsv($line);
+                    if(empty($temp[0]))
+                        continue;
                     
                     if($flag){
                         if($temp[1]!='Customer' && $temp[7]!='Yazaki Location' && $temp[0]!='Supplier' && $temp[5]!='SA Release No.' && $temp[8]!='Yazaki Material No.')
@@ -147,32 +165,27 @@ class Rlm_model extends CI_Model  {
                     else{
                         /*$plantNum = $temp[0].'_'.$temp[6];
                         $rlm_key = $customer_num.'-'.$plantNum.'-'.$temp[10].'-'.$import_date;*/
-                         $plant_part_error_count = 0;   
-                        $plantNum = $temp[0].'_'.$temp[6];  
-                        $part_num = $temp[10];
-                        $rlm_key = $customer_num.'-'.$plantNum.'-'.$temp[10].'-'.$import_date;
+                        $plantNum = $temp[7];  
+                        $part_num = $temp[8];
+                        $rlm_key = $customer_num.'-'.$plantNum.'-'.$part_num.'-'.$import_date;
                         $plant_part_exists = $this->check_plant_part($customer_num,$plantNum,$part_num);    
                         if(!$plant_part_exists){    
                             if($plant_part_error_count == 0)    
                                 $tabledata.="<tr><td><h3>Errors:</h3> <ol>";    
-                            $tabledata.="<li>Plant Number ".$plantNum." with Part Number ".$part_num." for Customer ".$customer_name." is missing from plant part setup</li>";  
+                            $tabledata.="<li>Plant Number ".$plantNum." with Part Number ".$part_num." for Customer Yazaki is missing from plant part setup</li>";  
                             $plant_part_error_count++;  
                         }
-                        if($plant_part_error_count > 0){
-                            if($checkIndex == (Count($lineNo))){
-                                $tabledata.="</ol></td></tr>";
-                                break;
-                            }
-                            $checkIndex++;
+                        if($plant_part_error_count>0){
                             continue;
-                        }   
+                        }
                         $headerSectionArr = array
                         (
                         'customer_num' => $customer_num,
                         'customer_name'  => $customer_name,
                         'import_date'   =>  $import_date,
                         'plant_num'   =>   $plantNum,
-                        'part_num'   =>   $temp[10],
+                        'plant_name' => $temp[1],
+                        'part_num'   =>   $temp[8],
                         'past_due' => 'N/A',
                         'rel_num' => $temp[5],
                         'rel_date' => $yazakiReleaseDate,
@@ -212,12 +225,14 @@ class Rlm_model extends CI_Model  {
                     $headerSectionArr = array();
                     $lastAsnSectionArr = array();
                 }
-                $checkIndex++;
             }
         }
 
         else{
             array_push($transaction_level_errors, 'File does not exists');
+        }
+        if($plant_part_error_count>0){
+                            print_r($tabledata);exit;
         }
         //******Transaction Level******
         $tabledata.="<tr><td><h2>Import Release Result</h2></td></tr>";
@@ -234,6 +249,11 @@ class Rlm_model extends CI_Model  {
             $tabledata.="<tr><td><h3>Errors:</h3> <ol><li>File not found</li></ol></td></tr>";
         }
         else{
+            echo '<pre>';
+            print_r($transaction_level_data);
+            echo '<br><br><br>:::::';
+            print_r($bulkSectionPeriodArr);
+            exit;
             $this->db->insert_batch('rlm_data', $transaction_level_data);   
             $this->db->insert_batch('periods', $bulkSectionPeriodArr);
             $tabledata.="<tr><td><h3>Success:</h3> <p>".count($transaction_level_data)." rows added successfully</p></td></tr>";
@@ -424,9 +444,6 @@ class Rlm_model extends CI_Model  {
 
                         array_push($bulkinsertPeriod_arr,$trasaction_level_period_data);
                     }
-					//  echo "<pre>";
-					// print_r($bulkinsertPeriod_arr);
-					// exit();
 
                     $transaction_level_data = array
                     (
