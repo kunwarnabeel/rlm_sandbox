@@ -3,7 +3,7 @@
         <div class="box-shadow">
             <div class="table-head" style="height: 70px">
                 <div class="col-md-12">
-                    Detailed Warning Log
+                    Detailed Warning Log Aptiv
                 </div>
             </div>
             <div class="">
@@ -60,19 +60,37 @@
                                 <thead>
 									<th></th>
 									<th>PRIOR</th>
-                                    <?php foreach($periods as $row => $col){?>
+									
+                                    <?php
+									$releaseDate = "";
+									//echo "<pre>"; print_r($periods);
+									foreach($periods as $row => $col){
+										if(empty($releaseDate)){
+											$releaseDate=$row;
+										}
+										
+									?>
                                         <th><?php echo $row?></th>
                                     <?php }?>
                                 </thead>
                                 <tbody>
+								<tr>
+									<td></td>
+									<td></td>
+									<?php 
+									foreach($periods as $row => $col){?>
+											<td><?php echo $col?></td>
+									<?php }?>
+								</tr>
 									<tr>
 									<td></td>
 									<td></td>
-                                <?php foreach($periods as $row => $col){?>
-                                        <td><?php echo $col?></td>
-                                    <?php }?>
-									</tr>
-									<tr>
+									<?php 
+									$periodKey=1;
+									foreach($periods as $row => $col){?>
+											<td><?=$Rlm_model->get_period_sum_by_key($rlmkey,$releaseDate,$periodKey++);?></td>
+									<?php }?>
+								</tr>
 									<td>IN TRANSIT</td>
 									<td><?php echo $in_transit_num ?></td>
                                 
@@ -91,47 +109,90 @@
                                         $in_transit_num = 0;
                                     }
                                     $import_date = date('Ymd',strtotime('Last Monday'));
+                                    //echo $import_date;
                                     if(date('D') == "Mon") $import_date = date('Ymd');
                                     $infoData = array();
-                                    $query_str="SELECT SUM(`open_qty`) AS open_qty FROM `open_orders` WHERE status=1 AND `customer_num`='$oracleId' AND `ship_to_location`='$shipToLoc' AND `item` in ('$swsPartNum','$part_num') GROUP BY `schd_ship_date`";
+                                    $query_str="SELECT SUM(`open_qty`) AS open_qty , schd_ship_date FROM `open_orders` WHERE STATUS=1 AND `customer_num`='$oracleId' AND `ship_to_location`='$shipToLoc' AND `item` in ('$swsPartNum','$part_num') GROUP BY `schd_ship_date`";
+                                    //echo $query_str."<br/>";
                                     $query=$this->db->query($query_str);
                                     $infoData = $query->result_array();
-                                    $swsInTransitPrior = $infoData[0]['open_qty']+$cum_rec_qty+$in_transit_num;
-                                    foreach($infoData as $key=>$val){
-                                    ?>
-                                    <td><?php echo $val['open_qty']?></td>
-                                    <?php } ?>
-                                    </tr>
-                                    <tr>
-                                    <td>SWS-USA CUM Estimate</td>
-									<td>
-                                       <?php echo $swsInTransitPrior ?>  
-                                    </td>
+                                    for($i=0;$i<count($infoData);$i++){
+                                      // echo date("Y-m-d", strtotime($import_date))."  -  ".date("Y-m-d", strtotime($infoData[$i]['schd_ship_date']))."<br/>";
+                                       if(date("Y-m-d", strtotime($import_date)) > date("Y-m-d", strtotime($infoData[$i]['schd_ship_date']))){
+                                            $openOrderArr['back_orders'] += $infoData[$i]['open_qty'];
+                                            //$openOrderArr[$import_date] = $infoData[$i]['open_qty'];
+                                        }else{
+                                            $openOrderArr[$infoData[$i]['schd_ship_date']] = $infoData[$i]['open_qty'];
+                                        }
+                                    }
+                                    //echo "<pre>";
+                                    // print_r($infoData);
+                                    //print_r($openOrderArr);
+                                    $openOrderKeys = array_keys($openOrderArr);
+                                   //print_r($openOrderKeys);
 
+                                    ?>
+									<td><?php echo $openOrderArr['back_orders'] ?></td>
+                                    <?php
+                                    $currentRowDate=''; 
+                                    foreach($periods as $row => $col){
+                                       $currentRowDate = date("Y-m-d", strtotime($row));
+                                       $openOrderArrCheckThisDate=0;
+                                        for($dateI=0;$dateI<=6;$dateI++){
+                                            $dayInc = "+$dateI day";
+                                            $checkThisDate = date("Ymd",strtotime(date('Y-m-d', strtotime($currentRowDate.".$dayInc."))));
+                                            if(in_array($checkThisDate,$openOrderKeys)){
+                                                $openOrderArrCheckThisDate=$openOrderArr[$checkThisDate];
+                                                break;
+                                            }
+                                        }
+                                    ?>
+                                    <td><?php echo $openOrderArrCheckThisDate ?></td>
+                                    <?php } 
+                                    $swsInTransitPrior = $openOrderArr['back_orders']+$cum_rec_qty+$in_transit_num;
+                                    ?>
+									</tr>
+									<tr>
+									<td>SWS-USA CUM Estimate</td>
+                                    <td><?php echo $swsInTransitPrior ?></td>
                                     <?php 
                                     $swsInTransitNew = $swsInTransitPrior;
-                                    for($i=1;$i<count($infoData);$i++){
-                                        $swsInTransitNew = $swsInTransitNew+$infoData[$i]['open_qty'];
-                                        $swsInTransitNewArr[$i] = $swsInTransitNew;
+                                    $swsInTransitNewArr = array();
+                                    foreach($periods as $row => $col){
+                                        $currentRowDate = date("Y-m-d", strtotime($row));
+                                        $swsInTransitNewArr[$row] = $swsInTransitNew;
+                                        for($dateI=0;$dateI<=6;$dateI++){
+                                            $dayInc = "+$dateI day";
+                                            $checkThisDate = date("Ymd",strtotime(date('Y-m-d', strtotime($currentRowDate.".$dayInc."))));
+                                            if(in_array($checkThisDate,$openOrderKeys)){
+                                                $swsInTransitNew = $swsInTransitNew+$openOrderArr[$checkThisDate];
+                                                $swsInTransitNewArr[$checkThisDate] = $swsInTransitNew;
+                                                break;
+                                            }
+                                        }
                                     ?>
                                     <td><?=$swsInTransitNew?></td>
                                     <?php } ?>
 									</tr>
-
-                                    <tr>
-                                    <td>Delta</td>
+									 <tr>
+									<td>DELTA</td>
                                     <td></td>
                                     <?php 
-                                    $swsIndex = 1;
+                                    //print_r($swsInTransitNewArr);
                                     foreach($periods as $row => $col){
-                                        if(!$swsInTransitNewArr[$swsIndex])
-                                        continue;
-                                        $delta = $swsInTransitNewArr[$swsIndex] - $col;
-                                        $swsIndex++;
+                                        $currentRowDate = date("Y-m-d", strtotime($row));
+                                        $delta = $swsInTransitNewArr[$row] - $col;
+                                        for($dateI=0;$dateI<=6;$dateI++){
+                                            $dayInc = "+$dateI day";
+                                            $checkThisDate = date("Ymd",strtotime(date('Y-m-d', strtotime($currentRowDate.".$dayInc."))));
+                                            if(in_array($checkThisDate,$openOrderKeys)){
+                                                $delta = $swsInTransitNewArr[$checkThisDate] - $col;
+                                            }
+                                        }
                                     ?>
                                         <td><?php echo $delta; ?></td>
-                                    <?php } ?>
-                                    </tr>
+                                   <?php } ?>
+									</tr>
 									
                                 </tbody>
                             </table>

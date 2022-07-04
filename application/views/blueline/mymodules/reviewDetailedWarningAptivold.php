@@ -101,6 +101,7 @@
                                     <?php
                                     $openOrderArr = [];
                                     $swsPartNum = $rlmData[0]['sws_part_num'];
+									$part_num = $rlmData[0]['part_num'];
                                     $oracleId = $transitData[0]['customer_num'];
                                     $shipToLoc = $transitData[0]['ship_to_location'];
                                     if($in_transit_num){
@@ -110,8 +111,8 @@
                                     }
                                     $import_date = date('Ymd',strtotime('Last Monday'));
                                     if(date('D') == "Mon") $import_date = date('Ymd');
-                                    $query_str="SELECT SUM(`open_qty`) AS open_qty , schd_ship_date FROM `open_orders` WHERE `customer_num`='$oracleId' AND `ship_to_location`='$shipToLoc' AND `item`='$swsPartNum' AND `import_date`='$import_date' GROUP BY `schd_ship_date`";
-                                    echo $query_str."<br/>";
+                                    $query_str="SELECT SUM(`open_qty`) AS open_qty , schd_ship_date FROM `open_orders` WHERE STATUS=1 AND `customer_num`='$oracleId' AND `ship_to_location`='$shipToLoc' AND `item` in ('$swsPartNum','$part_num') GROUP BY `schd_ship_date`";
+                                    //echo $query_str."<br/>";
                                     $query=$this->db->query($query_str);
                                     $infoData = $query->result_array();
                                     for($i=0;$i<count($infoData);$i++){

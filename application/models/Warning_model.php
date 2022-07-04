@@ -155,10 +155,11 @@ class Warning_model extends CI_Model  {
         $data = $query->result_array();
         return $data;
     }
-    public function getTransitData($sws_part_num,$oracle_id,$ship_to_location){
+    public function getTransitData($sws_part_num,$oracle_id,$ship_to_location,$part_num){
         $this->db->select('ship_to_location,customer_name,customer_num,part_number, description,schedule_ship_date,actual_ship_date,period,qty_due,qty_shipped,qty_open');
         $this->db->from('transit_data');
-        $this->db->where('part_number',$sws_part_num);
+        $this->db->where('status',1);
+        $this->db->where_in('part_number',[$sws_part_num,$part_num]);
         $this->db->where('customer_num',$oracle_id);
         $this->db->where('ship_to_location',$ship_to_location);
         $query = $this->db->get();

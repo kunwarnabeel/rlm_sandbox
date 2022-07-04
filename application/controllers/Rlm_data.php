@@ -103,8 +103,8 @@ if($previous_key[0] == 'A1234'){
         }
         
         // weekly warning   
-        echo $delta.'---'.$weeklythreshold;
-        exit();             
+        // echo $delta.'---'.$weeklythreshold;
+        // exit();             
         if($delta>=$weeklythreshold)
         {
             

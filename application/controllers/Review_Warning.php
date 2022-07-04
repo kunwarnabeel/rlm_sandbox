@@ -17,13 +17,14 @@ class Review_Warning extends MY_Controller{
 
         $this->load->library('csvimport');
         $this->load->model('Warning_model');
+		$this->load->model('Rlm_model');
     }
     public function reviewWarning($rlm_key){
         $rlmData = $this->Warning_model->getRlmWarning($rlm_key);
         $plantDetailData = $this->Warning_model->getPlantDetails($rlmData[0]['customer_num'],$rlmData[0]['plant_num'],$rlmData[0]['part_num'],$rlmData[0]['sws_part_num']);
         $periods = $this->Warning_model->getPeriodWarning($rlmData[0]['rlmkey']);
         $periodArr = array_column($periods, 'value', 'period');
-        $transitData= $this->Warning_model->getTransitData($rlmData[0]['sws_part_num'],$plantDetailData[0]['oracle_id'],$plantDetailData[0]['ship_to_location']);
+        $transitData= $this->Warning_model->getTransitData($rlmData[0]['sws_part_num'],$plantDetailData[0]['oracle_id'],$plantDetailData[0]['ship_to_location'],$rlmData[0]['part_num']);
         $this->view_data['rlmData'] = $rlmData;
         $this->view_data['periods'] = $periodArr;
         $this->view_data['transitData'] = $transitData;
@@ -32,7 +33,7 @@ class Review_Warning extends MY_Controller{
         if ($_POST) {
             $userNotes = trim($_POST['user_note']);
             $in_transit_num = trim($_POST['in_transit_num']);
-            if($in_transit_num!=null && $in_transit_num!='' && $in_transit_num!=0){
+            if($in_transit_num!=null && $in_transit_num!=''){
                 $warning_arr = array(
                     'in_transit_num' => $in_transit_num,
                 );
@@ -50,6 +51,12 @@ class Review_Warning extends MY_Controller{
         $this->view_data['in_transit_num'] = $warningLogArr[0]['in_transit_num'];
         $this->view_data['user_note'] = $warningLogArr[0]['user_note'];
         $this->view_data['status'] = $warningLogArr[0]['status'];
-        $this->content_view = 'mymodules/reviewDetailedWarning';
+		if($rlmData[0]['customer_num']=='L2222'){
+			$this->content_view = 'mymodules/reviewDetailedWarning';
+		}else{
+			$this->view_data['rlmkey'] = $rlm_key;
+			$this->view_data['Rlm_model'] = $this->Rlm_model; 
+			$this->content_view = 'mymodules/reviewDetailedWarningAptiv';
+		}
     }
 }

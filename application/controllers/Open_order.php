@@ -87,6 +87,7 @@ class Open_order extends MY_Controller
             }
 
             if(count($openOrderArr) > 0){
+                $this->db->query('UPDATE open_orders SET status=0');
                 $queryResult1 = $this->db->insert_batch('open_orders', $openOrderArr);
                 $tabledata.="<tr><td><h3>Success:</h3> <p>".$temp." rows added successfully</p></td></tr>";
             }
